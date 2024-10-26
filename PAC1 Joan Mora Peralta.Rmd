@@ -1,0 +1,101 @@
+---
+title: "PAC1 Joan Mora Peralta"
+author: "Joan Mora Peralta"
+date: "2024-10-25"
+output: pdf_document
+editor_options: 
+  chunk_output_type: console
+---
+
+
+```{r dependencies, include=FALSE}
+if (!requireNamespace("BiocManager", quietly = TRUE)) {
+    install.packages("BiocManager")
+}
+if (!requireNamespace("SummarizedExperiment", quietly = TRUE)) {
+  BiocManager::install("SummarizedExperiment")
+}
+if (!requireNamespace("knitr", quietly = TRUE)) {
+  install.packages("knitr")
+}
+if (!requireNamespace("kableExtra", quietly = TRUE)) {
+  install.packages("kableExtra")
+}
+library(Biobase)
+library(SummarizedExperiment)
+library(knitr)
+library(kableExtra)
+```
+
+```{r descarrega}
+system("git clone https://github.com/nutrimetabolomics/metaboData.git")
+```
+
+Aquí hem descarregat l'estat actual del repositori Git.
+
+```{r contenidor}
+assayData <- read.csv("metaboData/Datasets/2018-MetabotypingPaper/DataValues_S013.csv", header=TRUE, sep = ",", row.names = 1, stringsAsFactors = TRUE)
+phenoData <- read.csv("metaboData/Datasets/2018-MetabotypingPaper/DataInfo_S013.csv", header=TRUE, sep = ",", row.names = 1, stringsAsFactors = TRUE)
+experiment <- SummarizedExperiment(assays = list(assayData = assayData), colData = phenoData)
+```
+
+Aquí hem accedit a la carpeta descarregada i transformat els arxius .csv en dues variables que passen a formar part del nou objecte 'experiment' de la classe SummarizedExperiment.
+
+```{r analisiexploratori1}
+experiment
+colData(experiment)
+rowData(experiment)
+```
+
+En aquest primer anàlisi veiem que es tracta d'un dataset d'e l'experiment  d'un experiment amb dimensions: 39x695 (observacions i variables). Els subjectes estudiats estàn numertars i les variables son de diferent naturalesa ("SURGERY" , "SM.C24.0_T5" ...). Per tant, les primeres variables s'espera que siguin més categòriques i més generals i després signifiqin valors en diferents registres metabolòmics. Això concorda amb la descripció de l'experiment escrit en el catàleg del repositori, que diu : Data used in the paper "Metabotypes of response to bariatric surgery independent of the magnitude of weight loss". Les descripcions no estàn ben anotades, ja que en totes hi tenim el mateix valor "dataDesc".
+
+També veiem com rowData no presenta més columnes d'informació, ja que no hem carregat cap anotació al instanciar l'objecte SummarizedExperiment
+
+```{r info_files}
+rowData(experiment) <- data.frame(anotacions_ = c(rep("info de fila", 39)))
+```
+
+```{r analisiexploratori2}
+assay(experiment)[,1:2] <- apply(assay(experiment)[,1:2], 2, as.factor)
+assay(experiment)[,4:9] <- apply(assay(experiment)[,4:9], 2, as.factor)
+```
+
+```{r }
+na_total <- sum(is.na(assay(experiment)))
+na_prop <- na_total / prod(dim(experiment))
+cat("Proporció de NA en el dataset: ",round(na_prop*100, 0),"%")
+
+na_cols <- as.matrix(apply(assay(experiment), 2, function(x) sum(is.na(x))>0))
+na_cols_total <- sum(na_cols)
+na_cols_prop <- na_cols_total / dim(assay(experiment))[2]
+cat("Proporció columnes amb NA en el dataset: ",round(na_cols_prop*100, 0),"%")
+
+na_fila <- as.matrix(apply(assay(experiment), 1, function(x) sum(is.na(x))>0))
+na_fila_total <- sum(na_fila)
+na_fila_prop <- na_fila_total / dim(assay(experiment))[1]
+cat("Proporció files amb NA en el dataset: ",round(na_fila_prop*100, 0),"%")
+
+```
+
+Veiem que hi ha molta presència de valors nuls, i que aquests no estan concentrats en cap regió, sino que totes les observacions i gran part de les columnes en tenen. En un cas pràctic crec que no es pot eliminar cap columna s'hauria d'imputar valors que afectin mínimament a la resta de valors com ara la mitjana en columnes quantitatives o medianes en factors. Però primer s'hauria d'interpretar molt bé què significa cada una.
+
+```{r exemple}
+tipus <- sapply(assay(experiment), class)
+
+getPlot <- function(i) {
+  if (tipus[i] == "integer" || tipus[i] == "numeric") {
+    boxplot(as.numeric(assay(experiment)[, i]), main = colnames(assay(experiment))[i])
+  } else {
+    barplot(table(assay(experiment)[, i]), main = colnames(assay(experiment))[i])
+  }
+  invisible(NULL)
+}
+par(mfrow = c(5,5))
+lapply(1:25, getPlot)
+```
+
+Aquí es pot comprovar que hi ha una important disparitat entre els dos tipus de cirurgies i els dos sexes, que les edats son bastant properes al voltant dels 40 anys. Els nivells de glucosa, insulina i altres metabolits presenten diferents distribucions, en especial TAS_T0 que clarament no segueix una distribució normal, el què significa que no podrem, de moment, fer cap estudi paramètric. MEDDM_T0 només presenta un sol valor, el què significa que la taula tampoc és, de moment, de rang màxim i una regressió tindrà infinites solucions possibles.
+
+```{r }
+
+```
