@@ -27,7 +27,7 @@ library(knitr)
 library(kableExtra)
 ```
 
-```{r descarrega}
+```{r descarrega, results='hide'}
 system("git clone https://github.com/nutrimetabolomics/metaboData.git")
 ```
 
@@ -90,8 +90,8 @@ getPlot <- function(i) {
   }
   invisible(NULL)
 }
-par(mfrow = c(5,5))
-lapply(1:25, getPlot)
+par(mfrow = c(3,5))
+lapply(1:15, getPlot)
 ```
 
 Aquí es pot comprovar que hi ha una important disparitat entre els dos tipus de cirurgies i els dos sexes, que les edats son bastant properes al voltant dels 40 anys. Els nivells de glucosa, insulina i altres metabolits presenten diferents distribucions, en especial TAS_T0 que clarament no segueix una distribució normal, el què significa que no podrem, de moment, fer cap estudi paramètric. MEDDM_T0 només presenta un sol valor, el què significa que la taula tampoc és, de moment, de rang màxim i una regressió tindrà infinites solucions possibles.
