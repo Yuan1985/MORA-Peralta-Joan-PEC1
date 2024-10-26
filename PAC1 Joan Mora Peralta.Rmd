@@ -49,16 +49,20 @@ rowData(experiment)
 
 En aquest primer anàlisi veiem que es tracta d'un dataset d'e l'experiment  d'un experiment amb dimensions: 39x695 (observacions i variables). Els subjectes estudiats estàn numertars i les variables son de diferent naturalesa ("SURGERY" , "SM.C24.0_T5" ...). Per tant, les primeres variables s'espera que siguin més categòriques i més generals i després signifiqin valors en diferents registres metabolòmics. Això concorda amb la descripció de l'experiment escrit en el catàleg del repositori, que diu : Data used in the paper "Metabotypes of response to bariatric surgery independent of the magnitude of weight loss". Les descripcions no estàn ben anotades, ja que en totes hi tenim el mateix valor "dataDesc".
 
-També veiem com rowData no presenta més columnes d'informació, ja que no hem carregat cap anotació al instanciar l'objecte SummarizedExperiment
+També veiem com rowData no presenta més columnes d'informació, ja que no hem carregat cap anotació al instanciar l'objecte SummarizedExperiment.
 
 ```{r info_files}
 rowData(experiment) <- data.frame(anotacions_ = c(rep("info de fila", 39)))
 ```
 
+Ja que no tenim anotacions de les files, les posem de manera artificial a mode d'exemple.
+
 ```{r analisiexploratori2}
 assay(experiment)[,1:2] <- apply(assay(experiment)[,1:2], 2, as.factor)
 assay(experiment)[,4:9] <- apply(assay(experiment)[,4:9], 2, as.factor)
 ```
+
+Transformem el tipus de certes columnes a factors, ja que d'altra manera R les interpretarà com a numèriques.
 
 ```{r }
 na_total <- sum(is.na(assay(experiment)))
@@ -88,10 +92,9 @@ getPlot <- function(i) {
   } else {
     barplot(table(assay(experiment)[, i]), main = colnames(assay(experiment))[i])
   }
-  invisible(NULL)
 }
 par(mfrow = c(3,5))
-lapply(1:15, getPlot)
+invisible(lapply(2:16, getPlot))
 ```
 
 Aquí es pot comprovar que hi ha una important disparitat entre els dos tipus de cirurgies i els dos sexes, que les edats son bastant properes al voltant dels 40 anys. Els nivells de glucosa, insulina i altres metabolits presenten diferents distribucions, en especial TAS_T0 que clarament no segueix una distribució normal, el què significa que no podrem, de moment, fer cap estudi paramètric. MEDDM_T0 només presenta un sol valor, el què significa que la taula tampoc és, de moment, de rang màxim i una regressió tindrà infinites solucions possibles.
