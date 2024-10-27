@@ -1,5 +1,5 @@
 ---
-title: "PAC1 Joan Mora Peralta"
+title: "PAC1"
 author: "Joan Mora Peralta"
 date: "2024-10-25"
 output: pdf_document
@@ -83,7 +83,7 @@ cat("Proporció files amb NA en el dataset: ",round(na_fila_prop*100, 0),"%")
 
 Veiem que hi ha molta presència de valors nuls, i que aquests no estan concentrats en cap regió, sino que totes les observacions i gran part de les columnes en tenen. En un cas pràctic crec que no es pot eliminar cap columna s'hauria d'imputar valors que afectin mínimament a la resta de valors com ara la mitjana en columnes quantitatives o medianes en factors. Però primer s'hauria d'interpretar molt bé què significa cada una.
 
-```{r exemple}
+```{r exemple, tidy=TRUE}
 tipus <- sapply(assay(experiment), class)
 
 getPlot <- function(i) {
@@ -95,10 +95,75 @@ getPlot <- function(i) {
 }
 par(mfrow = c(3,5))
 invisible(lapply(2:16, getPlot))
+invisible(dev.off())
 ```
 
 Aquí es pot comprovar que hi ha una important disparitat entre els dos tipus de cirurgies i els dos sexes, que les edats son bastant properes al voltant dels 40 anys. Els nivells de glucosa, insulina i altres metabolits presenten diferents distribucions, en especial TAS_T0 que clarament no segueix una distribució normal, el què significa que no podrem, de moment, fer cap estudi paramètric. MEDDM_T0 només presenta un sol valor, el què significa que la taula tampoc és, de moment, de rang màxim i una regressió tindrà infinites solucions possibles.
 
-```{r }
-
+```{r metadades}
+metadata(experiment) <- list(
+    titol = "PAC1",
+    aula = 3,
+    autor = "Joan Mora"
+)
+save(experiment, file = "contenidor.Rda")
 ```
+
+Afegim més informació a la part de metadades de l'experiment i el guardem en format binari.
+
+```{r analisi_pcomp}
+
+
+# Funció per corregir valors NA d'una columna amb la mitjana dels altres valors o 0 si tots son NA.
+imput <- function(x) {
+    nas <- is.na(x)
+    mitjana <- mean(x, na.rm = TRUE)
+    if(is.na(mitjana)) {
+        mitjana <- 0
+    }
+    x[nas] <- mitjana
+    return(x)
+}
+
+# Corregim totes les columnes i comprovem que no en quedi cap amb valors NA
+matriu <- assay(experiment)[,10:ncol(experiment)]
+matriu <- apply(matriu, 2, imput)
+sum(is.na(matriu))
+
+# Identifiquem i filtrem les columnes que només tenen un valor únic. Perquè si no, al escalar, haurem de dividir entre sd 0.
+constant_cols <- apply(matriu, 2, function(x) length(unique(x)) == 1)
+which(constant_cols)
+matriu_filtered <- matriu[, !constant_cols]
+
+# Al ser medicions amb comportaments diferents (sd no son comparables), optem per escalar els valors.
+escalat <- scale(matriu_filtered, center = TRUE, scale = TRUE)
+
+# Matri de covariancia ajustada
+n <- dim(matriu)[1]
+S <- cov(escalat) * (n - 1) / n
+
+# Matriu de correlació
+R <- cor(escalat)
+
+# Valors propis
+EIG <- eigen(S)
+
+# Obtenir components principals
+eigenVecs1 <- EIG$vectors
+PCAS1 <- matriu_filtered %*% eigenVecs1
+
+# Visualització 2D de les dues principals components
+dev.new()
+plot(PCAS1[, 1], PCAS1[, 2])
+
+# Veure quin valor relatiou té cada component principal de forma relativa
+vars1 <- EIG$values / sum(EIG$values)
+relatius <- round(vars1, 3)
+relatius[1:5]
+```
+
+Finalment hem fet un intent d'analitzar les components principals seguint un exemple dels apunts, on es veu finalment que les dues principals components encaixen en un comportament aparentment definit i que podria ser analitzat a continuació amb una regressió lineal. To i això, els percentatges son molt petits i poc concentrats en els primers components, llavors, per molt que es pugui trobar una relació, aquesta pot no tenir un efecte predictiu important.
+
+---
+
+Enllaç al repositori: [MORA-Peralta-Joan-PEC1](https://github.com/Yuan1985/MORA-Peralta-Joan-PEC1) (https://github.com/Yuan1985/MORA-Peralta-Joan-PEC1)
