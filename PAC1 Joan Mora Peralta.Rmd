@@ -112,8 +112,6 @@ save(experiment, file = "contenidor.Rda")
 Afegim més informació a la part de metadades de l'experiment i el guardem en format binari.
 
 ```{r analisi_pcomp}
-
-
 # Funció per corregir valors NA d'una columna amb la mitjana dels altres valors o 0 si tots son NA.
 imput <- function(x) {
     nas <- is.na(x)
@@ -153,8 +151,10 @@ eigenVecs1 <- EIG$vectors
 PCAS1 <- matriu_filtered %*% eigenVecs1
 
 # Visualització 2D de les dues principals components
-dev.new()
-plot(PCAS1[, 1], PCAS1[, 2])
+colors <- c("blue", "red")
+surgery_types <- assay(experiment)$SURGERY
+color_vector <- ifelse(surgery_types == "by pass", colors[1], colors[2])
+plot(PCAS1[, 1], PCAS1[, 2], col = color_vector)
 
 # Veure quin valor relatiou té cada component principal de forma relativa
 vars1 <- EIG$values / sum(EIG$values)
